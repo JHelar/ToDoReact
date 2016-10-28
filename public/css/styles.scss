@@ -1,0 +1,25 @@
+//Variables
+@import 'variables';
+
+.item {
+  font-size: 2rem;
+  color: black;
+  .checkbox {
+    cursor: pointer;
+    padding: 0;
+    border: 0;
+  }
+
+}
+.item.not-done{
+
+  .checkbox {
+    color: $green;
+  }
+}
+.item.done{
+
+  .checkbox {
+    color: $red;
+  }
+}

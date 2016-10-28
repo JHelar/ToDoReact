@@ -1,0 +1,15 @@
+.item {
+  font-size: 2rem;
+  color: black; }
+  .item .checkbox {
+    cursor: pointer;
+    padding: 0;
+    border: 0; }
+
+.item.not-done .checkbox {
+  color: #00ff7f; }
+
+.item.done .checkbox {
+  color: #dc143c; }
+
+/*# sourceMappingURL=styles.css.map */

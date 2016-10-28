@@ -1,0 +1,20 @@
+{
+  "name": "to-do-react",
+  "version": "1.0.0",
+  "description": "ToDoList with ReactJS",
+  "main": "ToDo.js",
+  "scripts": {
+    "build": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoNew.js -o public/js/ToDoCompiled.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oru-johlah123/ToDoReact.git"
+  },
+  "author": "John Larsson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/oru-johlah123/ToDoReact/issues"
+  },
+  "homepage": "https://github.com/oru-johlah123/ToDoReact#readme"
+}
