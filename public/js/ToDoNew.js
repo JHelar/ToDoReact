@@ -2,7 +2,7 @@ class ToDoOwnerRow extends  React.Component{
     render(){
         return (
             <tr>
-                <th colSpan="2">{this.props.owner.Name}</th>
+                <th colSpan="2">{this.props.owner.FirstName}</th>
             </tr>
         );
     }
@@ -35,11 +35,11 @@ class ToDoTable extends React.Component{
         var rows = [];
         var _this = this;
         this.props.owners.forEach(function(owner){
-            rows.push(<ToDoOwnerRow owner={owner} key={owner.Id}/>);
+            rows.push(<ToDoOwnerRow owner={owner} key={owner.ItemID}/>);
             owner.Items.forEach(function(item){
                 if((item.Name.toUpperCase().indexOf(_this.props.filterText.toUpperCase()) !== -1) &&
                     !(item.Done && _this.props.onlyNotDone)) {
-                    rows.push(<ToDoItemRow item={item} onItemUpdate={_this.props.onItemUpdate} key={item.OwnerId +  "_" + item.Id}/>);
+                    rows.push(<ToDoItemRow item={item} onItemUpdate={_this.props.onItemUpdate} key={item.OwnerID +  "_" + item.ItemID}/>);
                 }
             });
         });
@@ -96,7 +96,7 @@ class OwnerSelect extends React.Component{
         var rows = [];
         this.props.owners.forEach(function(owner){
            rows.push(
-             <option value={owner.Id}>{owner.Name}</option>
+             <option value={owner.OwnerID}>{owner.FirstName}</option>
            );
         });
         return (
@@ -123,7 +123,7 @@ class AddItemBar extends React.Component{
         var rows = [];
         this.props.owners.forEach(function(owner){
             rows.push(
-                <option value={owner.Id}>{owner.Name}</option>
+                <option value={owner.OwnerID}>{owner.FirstName}</option>
             );
         });
 
@@ -168,8 +168,8 @@ class ToDoListTable extends React.Component{
     handleItemAdd(ownerId, itemName){
         var _this = this;
         var item = {
-            OwnerId:parseInt(ownerId),
-            Id:0,
+            OwnerID:parseInt(ownerId),
+            ItemID:0,
             Name:itemName,
             Done:false,
         };

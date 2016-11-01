@@ -7,7 +7,7 @@ class ToDoOwnerRow extends React.Component {
             React.createElement(
                 "th",
                 { colSpan: "2" },
-                this.props.owner.Name
+                this.props.owner.FirstName
             )
         );
     }
@@ -48,10 +48,10 @@ class ToDoTable extends React.Component {
         var rows = [];
         var _this = this;
         this.props.owners.forEach(function (owner) {
-            rows.push(React.createElement(ToDoOwnerRow, { owner: owner, key: owner.Id }));
+            rows.push(React.createElement(ToDoOwnerRow, { owner: owner, key: owner.ItemID }));
             owner.Items.forEach(function (item) {
                 if (item.Name.toUpperCase().indexOf(_this.props.filterText.toUpperCase()) !== -1 && !(item.Done && _this.props.onlyNotDone)) {
-                    rows.push(React.createElement(ToDoItemRow, { item: item, onItemUpdate: _this.props.onItemUpdate, key: item.OwnerId + "_" + item.Id }));
+                    rows.push(React.createElement(ToDoItemRow, { item: item, onItemUpdate: _this.props.onItemUpdate, key: item.OwnerID + "_" + item.ItemID }));
                 }
             });
         });
@@ -122,8 +122,8 @@ class OwnerSelect extends React.Component {
         this.props.owners.forEach(function (owner) {
             rows.push(React.createElement(
                 "option",
-                { value: owner.Id },
-                owner.Name
+                { value: owner.OwnerID },
+                owner.FirstName
             ));
         });
         return React.createElement(
@@ -148,8 +148,8 @@ class AddItemBar extends React.Component {
         this.props.owners.forEach(function (owner) {
             rows.push(React.createElement(
                 "option",
-                { value: owner.Id },
-                owner.Name
+                { value: owner.OwnerID },
+                owner.FirstName
             ));
         });
 
@@ -200,8 +200,8 @@ class ToDoListTable extends React.Component {
     handleItemAdd(ownerId, itemName) {
         var _this = this;
         var item = {
-            OwnerId: parseInt(ownerId),
-            Id: 0,
+            OwnerID: parseInt(ownerId),
+            ItemID: 0,
             Name: itemName,
             Done: false
         };
