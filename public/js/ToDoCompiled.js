@@ -50,7 +50,7 @@ class ToDoTable extends React.Component {
         this.props.owners.forEach(function (owner) {
             rows.push(React.createElement(ToDoOwnerRow, { owner: owner, key: owner.ItemID }));
             owner.Items.forEach(function (item) {
-                if (item.Name.toUpperCase().indexOf(_this.props.filterText.toUpperCase()) !== -1 && !(item.Done && _this.props.onlyNotDone)) {
+                if (item.Name.toUpperCase().indexOf(_this.props.filterText.toUpperCase()) !== -1 && !(item.Done && !_this.props.onlyNotDone)) {
                     rows.push(React.createElement(ToDoItemRow, { item: item, onItemUpdate: _this.props.onItemUpdate, key: item.OwnerID + "_" + item.ItemID }));
                 }
             });
@@ -103,7 +103,7 @@ class SearchBar extends React.Component {
                 null,
                 React.createElement("input", { onChange: this.handleChange, ref: "onlyNotDone", type: "checkbox", checked: this.props.onlyNotDone }),
                 ' ',
-                "Only show not done"
+                "Show done"
             )
         );
     }
@@ -182,6 +182,17 @@ class ToDoListTable extends React.Component {
         this.handleUserInput = this.handleUserInput.bind(this);
         this.handleItemUpdate = this.handleItemUpdate.bind(this);
         this.handleItemAdd = this.handleItemAdd.bind(this);
+
+        //Register eventlistner
+        this.handleUpdateStream = this.handleUpdateStream.bind(this);
+        this.updateStream = new EventSource("/event/UpdateStream");
+        this.updateStream.onmessage = this.handleUpdateStream;
+    }
+    handleUpdateStream(e) {
+        var data = JSON.parse(e.data);
+        this.setState({
+            owners: data.Owners
+        });
     }
     handleUserInput(filterText, onlyNotDone) {
         this.setState({
@@ -228,5 +239,7 @@ class ToDoListTable extends React.Component {
 $.getJSON('/api/GetAllItems', function (data) {
     ReactDOM.render(React.createElement(ToDoListTable, { owners: data.Owners }), document.getElementById('list'));
 });
+
+//Setup the event stream.
 
 },{}]},{},[1]);

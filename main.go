@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"log"
 	"tododatabase"
+	"todoeventstream"
 	"encoding/json"
+	"todosecurity"
 )
 
 func serveIndex(w http.ResponseWriter, r *http.Request)  {
@@ -66,10 +68,16 @@ func getJsonResponse() ([]byte, error) {
 	type PayLoad struct {
 		Owners []tododatabase.Owner
 	}
-	return json.MarshalIndent(PayLoad{Owners:tododb.GetAllOwners(true)}, "", "    ")
+
+	jSon, error := json.Marshal(PayLoad{Owners:tododb.GetAllOwners(true)})
+	//Send stream notification.
+	stream.Notifier <- jSon
+
+	return jSon, error
 }
 
 var tododb *tododatabase.ToDoDb
+var stream *todoeventstream.Broker
 /*
 Use in production!
 var tpl *template.Template
@@ -83,12 +91,22 @@ func main()  {
 	tododb.Ping()
 	defer tododb.Close()
 
+	salt, sPass := todosecurity.NewSaltedPassword("lokabrun4")
+	//Try the salting.
+	log.Printf("salt: %s, pass: %s", salt, sPass)
 
+	//Declare the eventstream handle
+	stream = todoeventstream.NewServer()
 
+	//Register route handles
 	http.HandleFunc("/", serveIndex)
 	http.HandleFunc("/api/GetAllItems", getAllItems)
 	http.HandleFunc("/api/UpdateItem", updateItem)
 	http.HandleFunc("/api/AddItem", addItem)
+
+	//Register the event stream handle
+	http.HandleFunc("/event/UpdateStream", stream.ServeHTTP)
+
 	http.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("public"))))
 	http.ListenAndServe("0.0.0.0:8080", nil)
 }

@@ -38,7 +38,7 @@ class ToDoTable extends React.Component{
             rows.push(<ToDoOwnerRow owner={owner} key={owner.ItemID}/>);
             owner.Items.forEach(function(item){
                 if((item.Name.toUpperCase().indexOf(_this.props.filterText.toUpperCase()) !== -1) &&
-                    !(item.Done && _this.props.onlyNotDone)) {
+                    !(item.Done && !_this.props.onlyNotDone)) {
                     rows.push(<ToDoItemRow item={item} onItemUpdate={_this.props.onItemUpdate} key={item.OwnerID +  "_" + item.ItemID}/>);
                 }
             });
@@ -75,7 +75,7 @@ class SearchBar extends React.Component{
                 <p>
                     <input onChange={this.handleChange} ref="onlyNotDone" type="checkbox" checked={this.props.onlyNotDone}/>
                     {' '}
-                    Only show not done
+                    Show done
                 </p>
             </form>
         )
@@ -150,6 +150,17 @@ class ToDoListTable extends React.Component{
         this.handleUserInput = this.handleUserInput.bind(this);
         this.handleItemUpdate = this.handleItemUpdate.bind(this);
         this.handleItemAdd = this.handleItemAdd.bind(this);
+
+        //Register eventlistner
+        this.handleUpdateStream = this.handleUpdateStream.bind(this);
+        this.updateStream = new EventSource("/event/UpdateStream");
+        this.updateStream.onmessage = this.handleUpdateStream;
+    }
+    handleUpdateStream(e){
+        var data = JSON.parse(e.data);
+        this.setState({
+            owners:data.Owners
+        });
     }
     handleUserInput(filterText, onlyNotDone){
         this.setState({
@@ -202,3 +213,5 @@ $.getJSON(
         );
     }
 );
+
+//Setup the event stream.

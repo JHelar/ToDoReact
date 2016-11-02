@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	_"github.com/mattn/go-sqlite3"
+	"todosecurity"
 )
 
 //Object to interface with the database.
@@ -26,6 +27,16 @@ type Owner struct {
 	LastName string
 	Created string
 	Items []Item
+}
+
+type OwnerLogins struct {
+	ID int
+	OwnerID int
+	Salt string
+	Password string
+	Created string
+	Email string
+	IsDiabled string
 }
 
 func (todb ToDoDb) AddItem(item Item) bool {
@@ -143,6 +154,70 @@ func (todb ToDoDb) GetOwner(id int) Owner {
 	return Owner{OwnerID:ownerID, FirstName:firstName, LastName:lastName, Created:created}
 }
 
+//Tries to get an owner. Based on login details.
+func (todb ToDoDb) TryGetOwner(sessionKey, email, password string) (Owner, bool){
+	//Try get from session key
+	//TODO: Implement session support
+	if sessionKey != nil{
+		//row := todb.QueryRow("SELECT OwnerID FROM OwnerSessions WHERE SessionKey = ?", sessionKey)
+
+	}
+	row := todb.QueryRow("SELECT OwnerID, Salt, Password FROM OwnerLogins WHERE Email = ?", email)
+
+	var OwnerID int
+	var Salt, Password string
+	err := row.Scan(&OwnerID, &Salt, &Password)
+	switch {
+	case err == sql.ErrNoRows:
+		log.Printf("No user with email: %s", email)
+		return Owner{}, false
+	case err != nil:
+		log.Print("Something went terribly wrong in TryGetOwner")
+		return Owner{}, false
+	default:
+		break
+	}
+
+	//With the matching owner found, see if it is the correct password.
+	if todosecurity.CheckIfEqual(Salt, Password, password){
+		//We can log in! Get the Complete Owner Object
+		return todb.GetOwner(OwnerID), true
+	}else{
+		return Owner{}, false
+	}
+}
+
+func (todb ToDoDb) AddOwner(firstName, lastName, email, password string) bool{
+	stmt, err := todb.db.Prepare("INSERT INTO Owners (FirstName, LastName) VALUES(?, ?)")
+
+	if err != nil {
+		log.Print("Error in AddOwner, for prepare statement")
+		return false
+	}
+	res, err := stmt.Exec(firstName, lastName)
+	if err != nil {
+		log.Print("Error in AddOwner, for execute statement")
+		return false
+	}
+	OwnerID, err := res.LastInsertId()
+
+	//Create OwnerLogin object
+	salt, saltPass := todosecurity.NewSaltedPassword(password)
+
+	stmt.Close()
+	stmt, err = todb.db.Prepare("INSERT INTO OwnerLogins (OwnerID, Salt, Password, Email) VALUES (?, ?, ?, ?)")
+	if err != nil {
+		log.Print("Error in AddOwner, for prepare OwnerLogins statement")
+		return false
+	}
+	_, err = stmt.Exec(OwnerID, salt, saltPass, email)
+	if err != nil {
+		log.Print("Error in AddOwner, for OwnerLogins execute statement")
+		return false
+	}
+
+	return true
+}
 
 func (todb ToDoDb) Query(queryStr string, args ...interface{}) *sql.Rows {
 	var rows * sql.Rows
