@@ -4,7 +4,7 @@
   "description": "ToDoList with ReactJS",
   "main": "ToDo.js",
   "scripts": {
-    "build": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoNew.js -o public/js/ToDoCompiled.js",
+    "build": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoApp.js -o public/js/compiled/ToDoApp.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

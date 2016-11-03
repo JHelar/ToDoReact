@@ -8,7 +8,11 @@ import (
 	"tododatabase"
 	"todoeventstream"
 	"encoding/json"
-	"todosecurity"
+	"strings"
+	"tododatabase/todouser"
+	"tododatabase/todolist"
+	"strconv"
+	"tododatabase/todojson"
 )
 
 func serveIndex(w http.ResponseWriter, r *http.Request)  {
@@ -21,8 +25,40 @@ func serveIndex(w http.ResponseWriter, r *http.Request)  {
 	index.Execute(w, nil)
 }
 
-func getAllItems(w http.ResponseWriter, r *http.Request){
-	response, err := getJsonResponse()
+func addUserList(w http.ResponseWriter, r *http.Request)  {
+	decoder := json.NewDecoder(r.Body)
+
+	var data struct{
+		Key string
+		Name string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		log.Print(err)
+		response,_ := getJsonResponse(false, "Something went wrong try again later.")
+		fmt.Fprintf(w, string(response))
+		return
+	}
+	user, ok := todouser.GetUserBySessionKey(data.Key, tododb)
+	if ok {
+		ok = todolist.AddList(user.ID, data.Name, tododb)
+		list := todolist.GetListByName(user.ID, data.Name, tododb)
+		response,_ := getJsonResponse(true, todojson.ParseToDoList(list))
+		fmt.Fprintf(w, string(response))
+	}
+}
+
+func getUserLists(w http.ResponseWriter, r *http.Request){
+	userId := strings.TrimPrefix(r.URL.Path, "/api/GetUserLists/")
+	userIdInt,err := strconv.ParseInt(userId, 10, 0)
+	if err != nil{
+		panic(err)
+	}
+	user := todouser.GetUserById(int(userIdInt), tododb)
+	user.Lists = todolist.GetListsByUserId(user.ID, tododb)
+
+
+	response, err := getJsonResponse(true, user)
 	if err != nil{
 		panic(err)
 	}
@@ -30,6 +66,83 @@ func getAllItems(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(response))
 }
 
+func registerUser(w http.ResponseWriter, r *http.Request)  {
+	decoder := json.NewDecoder(r.Body)
+
+	var user struct{
+		Email string
+		UserName string
+		Password string
+	}
+
+	err := decoder.Decode(&user)
+	if err != nil {
+		log.Print(err)
+		response,_ := getJsonResponse(false, "Something went wrong try again later.")
+		fmt.Fprintf(w, string(response))
+		return
+	}
+	if success := todouser.AddUser(user.Email, user.UserName, user.Password, tododb); success {
+		response,_ := getJsonResponse(true, "Success!")
+		fmt.Fprintf(w, string(response))
+	}else {
+		response,_ := getJsonResponse(false, "Mail is allready in use.")
+		fmt.Fprintf(w, string(response))
+	}
+}
+
+func tryLoginUser(w http.ResponseWriter, r *http.Request){
+	decoder := json.NewDecoder(r.Body)
+
+	var session struct{
+		Key string
+	}
+	err := decoder.Decode(&session)
+	if err != nil {
+		log.Print(err)
+		response,_ := getJsonResponse(false, "Something went wrong try again later.")
+		fmt.Fprintf(w, string(response))
+		return
+	}
+	user, ok := todouser.GetUserBySessionKey(session.Key, tododb)
+	if ok {
+		//Convert to json user!
+		response,_ := getJsonResponse(true, todojson.ParseToDoUser(user))
+		fmt.Fprintf(w, string(response))
+	}else {
+		response,_ := getJsonResponse(false, "ForceLogin!")
+		fmt.Fprintf(w, string(response))
+	}
+}
+
+func loginUser(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+
+	var login struct{
+		Email string
+		Password string
+	}
+	err := decoder.Decode(&login)
+	if err != nil {
+		log.Print(err)
+		response,_ := getJsonResponse(false, "Something went wrong try again later.")
+		fmt.Fprintf(w, string(response))
+		return
+	}
+	//Do not return user object, convert to jsonUser!
+	user, ok := todouser.GetUserByLogin(login.Email, login.Password, tododb)
+
+	if ok {
+		//Convert to json user.
+		response,_ := getJsonResponse(true, todojson.ParseToDoUser(user))
+		fmt.Fprintf(w, string(response))
+	}else {
+		response,_ := getJsonResponse(false, "Wrong username or password.")
+		fmt.Fprintf(w, string(response))
+	}
+}
+
+/*
 func updateItem(w http.ResponseWriter, r *http.Request){
 	decoder := json.NewDecoder(r.Body)
 
@@ -63,15 +176,16 @@ func addItem(w http.ResponseWriter, r *http.Request)  {
 		fmt.Fprintf(w, string(response))
 	}
 }
-
-func getJsonResponse() ([]byte, error) {
+*/
+func getJsonResponse(status bool, object interface{}) ([]byte, error) {
 	type PayLoad struct {
-		Owners []tododatabase.Owner
+		Status bool
+		Object interface{}
 	}
 
-	jSon, error := json.Marshal(PayLoad{Owners:tododb.GetAllOwners(true)})
+	jSon, error := json.Marshal(PayLoad{Object:object, Status:status})
 	//Send stream notification.
-	stream.Notifier <- jSon
+	//stream.Notifier <- jSon
 
 	return jSon, error
 }
@@ -87,25 +201,24 @@ func init(){
 
 func main()  {
 	log.Print("Server started")
-	tododb = tododatabase.New("db/ToDo.db")
+	tododb = tododatabase.New("db/ToDoReact.db")
 	tododb.Ping()
 	defer tododb.Close()
 
-	salt, sPass := todosecurity.NewSaltedPassword("lokabrun4")
-	//Try the salting.
-	log.Printf("salt: %s, pass: %s", salt, sPass)
 
 	//Declare the eventstream handle
 	stream = todoeventstream.NewServer()
 
 	//Register route handles
 	http.HandleFunc("/", serveIndex)
-	http.HandleFunc("/api/GetAllItems", getAllItems)
-	http.HandleFunc("/api/UpdateItem", updateItem)
-	http.HandleFunc("/api/AddItem", addItem)
+	http.HandleFunc("/api/AddList", addUserList)
+	http.HandleFunc("/api/GetLists/", getUserLists)
+	http.HandleFunc("/api/Register", registerUser)
+	http.HandleFunc("/api/Login", loginUser)
+	http.HandleFunc("/api/TryLogin", tryLoginUser)
 
 	//Register the event stream handle
-	http.HandleFunc("/event/UpdateStream", stream.ServeHTTP)
+	//http.HandleFunc("/event/UpdateStream", stream.ServeHTTP)
 
 	http.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("public"))))
 	http.ListenAndServe("0.0.0.0:8080", nil)

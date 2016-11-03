@@ -5,6 +5,7 @@ import (
 	"time"
 	"crypto/sha512"
 	"encoding/hex"
+	"log"
 )
 
 const saltSymols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZåäöÅÄÖ!#¤%&/()=?"
@@ -39,4 +40,13 @@ func CheckIfEqual(salt, saltedPassword, password string) bool {
 	hasher.Write([]byte(salt + password))
 	//Create a salted hashed pass with the given password.
 	return hex.EncodeToString(hasher.Sum(nil)) == saltedPassword
+}
+
+func GenerateSessionKey() string{
+	key := make([]byte, 64)
+	_, err := rand.Read(key)
+	if err != nil{
+		log.Print(err)
+	}
+	return string(key)
 }
