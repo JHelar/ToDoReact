@@ -30,6 +30,7 @@ func NewUserSession(userID int, db *tododatabase.ToDoDb) (string, bool){
 	defer stmt.Close()
 
 	sKey := todosecurity.GenerateSessionKey()
+	//sKey := "Hej"
 	loginTime := time.Now()
 	lastSeenTime := time.Now()
 
@@ -42,8 +43,8 @@ func NewUserSession(userID int, db *tododatabase.ToDoDb) (string, bool){
 
 }
 
-func GetUserSessionByKey(sesssionKey string, db *tododatabase.ToDoDb) (*UserSession, bool){
-	row := db.QueryRow("SELECT UserID, LoginTime, LastSeenTime FROM UserSessions WHERE SessionKey = ?", sesssionKey)
+func GetUserSessionByKey(sessionKey string, db *tododatabase.ToDoDb) (*UserSession, bool){
+	row := db.QueryRow("SELECT UserID, LoginTime, LastSeenTime FROM UserSessions WHERE SessionKey = ?", sessionKey)
 
 	var loginTime, lastSeenTime time.Time
 	var userID int
@@ -51,7 +52,7 @@ func GetUserSessionByKey(sesssionKey string, db *tododatabase.ToDoDb) (*UserSess
 	err := row.Scan(&userID, &loginTime, &lastSeenTime)
 	switch {
 	case err == sql.ErrNoRows:
-		log.Print("No session with that key found.")
+		log.Printf("No session with key: %s", sessionKey)
 		return nil, false
 	case err != nil:
 		log.Print("Something went wrong in GetUserSessionByKey")
@@ -59,7 +60,7 @@ func GetUserSessionByKey(sesssionKey string, db *tododatabase.ToDoDb) (*UserSess
 	default:
 		break
 	}
-	return &UserSession{SesssionKey:sesssionKey, UserID:userID, LoginTime:loginTime, LastSeenTime:lastSeenTime}, true
+	return &UserSession{SesssionKey:sessionKey, UserID:userID, LoginTime:loginTime, LastSeenTime:lastSeenTime}, true
 }
 
 func UpdateUserSession(userSession *UserSession, db *tododatabase.ToDoDb) bool {

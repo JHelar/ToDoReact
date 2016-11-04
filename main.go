@@ -5,15 +5,20 @@ import (
 	"html/template"
 	"net/http"
 	"log"
-	"tododatabase"
 	"todoeventstream"
 	"encoding/json"
-	"strings"
-	"tododatabase/todouser"
 	"tododatabase/todolist"
-	"strconv"
 	"tododatabase/todojson"
+	"tododatabase/todoitem"
+	"todosecurity"
+	"tododatabase"
+	"tododatabase/todouser"
 )
+
+func authenticateRequest(r *http.Request, db *tododatabase.ToDoDb) (*todouser.User, bool){
+	sessionKey := todosecurity.GetSessionKeyFromHeader(r)
+	return todouser.GetUserBySessionKey(sessionKey, db)
+}
 
 func serveIndex(w http.ResponseWriter, r *http.Request)  {
 	//Use tpl variable for template execution in production!
@@ -25,48 +30,100 @@ func serveIndex(w http.ResponseWriter, r *http.Request)  {
 	index.Execute(w, nil)
 }
 
-func addUserList(w http.ResponseWriter, r *http.Request)  {
-	decoder := json.NewDecoder(r.Body)
-
-	var data struct{
-		Key string
-		Name string
-	}
-	err := decoder.Decode(&data)
-	if err != nil {
-		log.Print(err)
-		response,_ := getJsonResponse(false, "Something went wrong try again later.")
-		fmt.Fprintf(w, string(response))
-		return
-	}
-	user, ok := todouser.GetUserBySessionKey(data.Key, tododb)
+func addList(w http.ResponseWriter, r *http.Request)  {
+	user, ok := authenticateRequest(r, tododb)
 	if ok {
+		decoder := json.NewDecoder(r.Body)
+
+		var data struct{
+			Name string
+		}
+
+		err := decoder.Decode(&data)
+		if err != nil {
+			log.Print(err)
+			response,_ := getJsonResponse(false, "Something went wrong try again later.")
+			fmt.Fprintf(w, string(response))
+			return
+		}
+
 		ok = todolist.AddList(user.ID, data.Name, tododb)
 		list := todolist.GetListByName(user.ID, data.Name, tododb)
 		response,_ := getJsonResponse(true, todojson.ParseToDoList(list))
 		fmt.Fprintf(w, string(response))
+	}else{
+		response,_ := getJsonResponse(false, "Need to relog!")
+		fmt.Fprintf(w, string(response))
 	}
 }
 
-func getUserLists(w http.ResponseWriter, r *http.Request){
-	userId := strings.TrimPrefix(r.URL.Path, "/api/GetUserLists/")
-	userIdInt,err := strconv.ParseInt(userId, 10, 0)
-	if err != nil{
-		panic(err)
+func getList(w http.ResponseWriter, r *http.Request)  {
+	user, ok := authenticateRequest(r, tododb)
+	if ok {
+		decoder := json.NewDecoder(r.Body)
+		var data struct{
+			ID int
+		}
+		err := decoder.Decode(&data)
+
+		if err != nil {
+			log.Print(err)
+			response,_ := getJsonResponse(false, "Something went wrong try again later.")
+			fmt.Fprintf(w, string(response))
+			return
+		}
+
+		list := todolist.GetListById(user.ID, data.ID, tododb)
+		response,_ := getJsonResponse(true, todojson.ParseToDoList(list))
+		fmt.Fprintf(w, string(response))
+	}else{
+		response,_ := getJsonResponse(false, "Need to relog!")
+		fmt.Fprintf(w, string(response))
 	}
-	user := todouser.GetUserById(int(userIdInt), tododb)
-	user.Lists = todolist.GetListsByUserId(user.ID, tododb)
-
-
-	response, err := getJsonResponse(true, user)
-	if err != nil{
-		panic(err)
-	}
-
-	fmt.Fprintf(w, string(response))
 }
 
-func registerUser(w http.ResponseWriter, r *http.Request)  {
+func getLists(w http.ResponseWriter, r *http.Request){
+	user, ok := authenticateRequest(r, tododb)
+	if ok {
+		lists := todolist.GetListsByUserId(user.ID, tododb)
+
+		response,_ := getJsonResponse(true, todojson.ParseToDoLists(lists))
+		fmt.Fprintf(w, string(response))
+	}else{
+		response,_ := getJsonResponse(false, "Need to relog!")
+		fmt.Fprintf(w, string(response))
+	}
+
+}
+
+func addItem(w http.ResponseWriter, r *http.Request){
+	user, ok := authenticateRequest(r, tododb)
+	if ok {
+		var data struct{
+			ListID int
+			Name string
+		}
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&data)
+		if err != nil {
+			log.Print(err)
+			response,_ := getJsonResponse(false, "Something went wrong try again later.")
+			fmt.Fprintf(w, string(response))
+			return
+		}
+		added := todoitem.AddItem(data.ListID, data.Name, tododb)
+		if added {
+			list := todolist.GetListById(user.ID, data.ListID, tododb)
+			response,_ := getJsonResponse(true, todojson.ParseToDoList(list))
+			fmt.Fprintf(w, string(response))
+		}
+	}else{
+		response,_ := getJsonResponse(false, "Need to relog!")
+		fmt.Fprintf(w, string(response))
+	}
+}
+
+func register(w http.ResponseWriter, r *http.Request)  {
 	decoder := json.NewDecoder(r.Body)
 
 	var user struct{
@@ -91,20 +148,8 @@ func registerUser(w http.ResponseWriter, r *http.Request)  {
 	}
 }
 
-func tryLoginUser(w http.ResponseWriter, r *http.Request){
-	decoder := json.NewDecoder(r.Body)
-
-	var session struct{
-		Key string
-	}
-	err := decoder.Decode(&session)
-	if err != nil {
-		log.Print(err)
-		response,_ := getJsonResponse(false, "Something went wrong try again later.")
-		fmt.Fprintf(w, string(response))
-		return
-	}
-	user, ok := todouser.GetUserBySessionKey(session.Key, tododb)
+func tryLogin(w http.ResponseWriter, r *http.Request){
+	user, ok := authenticateRequest(r, tododb)
 	if ok {
 		//Convert to json user!
 		response,_ := getJsonResponse(true, todojson.ParseToDoUser(user))
@@ -115,7 +160,7 @@ func tryLoginUser(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func loginUser(w http.ResponseWriter, r *http.Request) {
+func login(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	var login struct{
@@ -205,21 +250,23 @@ func main()  {
 	tododb.Ping()
 	defer tododb.Close()
 
-
 	//Declare the eventstream handle
 	stream = todoeventstream.NewServer()
 
+
 	//Register route handles
 	http.HandleFunc("/", serveIndex)
-	http.HandleFunc("/api/AddList", addUserList)
-	http.HandleFunc("/api/GetLists/", getUserLists)
-	http.HandleFunc("/api/Register", registerUser)
-	http.HandleFunc("/api/Login", loginUser)
-	http.HandleFunc("/api/TryLogin", tryLoginUser)
+	http.HandleFunc("/api/AddList", addList)
+	http.HandleFunc("/api/GetLists", getLists)
+	http.HandleFunc("/api/GetList", getList)
+	http.HandleFunc("/api/AddItem", addItem)
+	http.HandleFunc("/api/Register", register)
+	http.HandleFunc("/api/Login", login)
+	http.HandleFunc("/api/TryLogin", tryLogin)
 
 	//Register the event stream handle
 	//http.HandleFunc("/event/UpdateStream", stream.ServeHTTP)
 
 	http.Handle("/public/", http.StripPrefix("/public", http.FileServer(http.Dir("public"))))
-	http.ListenAndServe("0.0.0.0:8080", nil)
+	http.ListenAndServe("localhost:8080", nil)
 }

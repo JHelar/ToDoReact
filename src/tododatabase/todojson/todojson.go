@@ -43,6 +43,14 @@ func ParseToDoList(tableList *todolist.List) *List {
 	}
 }
 
+func ParseToDoLists(tableLists []todolist.List) []*List {
+	lists := make([]*List, 0)
+	for _,tableList := range tableLists {
+		lists = append(lists, ParseToDoList(&tableList))
+	}
+	return lists
+}
+
 type Item struct {
 	ID int
 	Name string

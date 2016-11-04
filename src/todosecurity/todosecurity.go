@@ -6,6 +6,8 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"log"
+	"net/http"
+	"encoding/base64"
 )
 
 const saltSymols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZåäöÅÄÖ!#¤%&/()=?"
@@ -48,5 +50,15 @@ func GenerateSessionKey() string{
 	if err != nil{
 		log.Print(err)
 	}
-	return string(key)
+	return base64.StdEncoding.EncodeToString(key)
+}
+
+//Resturns empty string if cookie not found.
+func GetSessionKeyFromHeader(r *http.Request)  string {
+	session, err := r.Cookie("SessionKey")
+	if err != nil {
+		return ""
+	}
+	str := session.String()
+	return str[11:len(str)]
 }

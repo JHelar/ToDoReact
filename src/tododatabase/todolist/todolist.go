@@ -16,6 +16,28 @@ type List struct {
 	Items []todoitem.Item
 }
 
+
+func GetListById(userID int, listID int, db *tododatabase.ToDoDb) *List {
+	row := db.QueryRow("SELECT Name, Created FROM Lists WHERE UserID = ? AND ID = ?", userID, listID)
+
+	var name string
+	var created time.Time
+
+	err := row.Scan(&name, &created)
+	switch {
+	case err == sql.ErrNoRows:
+		log.Printf("No Lists found with userID: %d and id: %d", userID, listID)
+		return nil
+	case err != nil:
+		log.Print(err)
+		return nil
+	default:
+		items := todoitem.GetItemsByListID(listID, db)
+		return &List{ID: listID, UserID:userID, Name:name, Created:created, Items:items}
+	}
+}
+
+
 func GetListByName(userID int, listName string, db *tododatabase.ToDoDb) *List {
 	row := db.QueryRow("SELECT ID, Created FROM Lists WHERE UserID = ? AND Name = ?", userID, listName)
 

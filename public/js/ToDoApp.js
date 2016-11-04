@@ -59,11 +59,23 @@ class Login extends React.Component {
     }
 }
 
+class Logout extends React.Component{
+    render(){
+        <section>
+            <button onClick={this.props.onLogout}>Logout</button>
+        </section>
+    }
+}
+
 class Header extends React.Component {
     constructor(props){
         super(props);
         this.handleRegisterSubmit = this.handleRegisterSubmit.bind(this);
         this.handleLoginSubmit = this.handleLoginSubmit.bind(this);
+        this.handleLogout = this.handleLogout.bind(this);
+    }
+    handleLogout(){
+        this.props.onLogout();
     }
     handleRegisterSubmit(registerObj){
         this.props.onRegisterSubmit(registerObj);
@@ -74,8 +86,9 @@ class Header extends React.Component {
     render(){
         return (
             <header>
-                <Register onRegisterSubmit={this.handleRegisterSubmit} /><br/>
-                <Login onLoginSubmit={this.handleLoginSubmit} />
+                {!this.props.isLogged && <Register onRegisterSubmit={this.handleRegisterSubmit} />}<br/>
+                {!this.props.isLogged && <Login onLoginSubmit={this.handleLoginSubmit} />}
+                {this.props.isLogged && <Logout onLogout={this.handleLogout}/>}
             </header>
         );
     }
@@ -100,6 +113,25 @@ class AddList extends React.Component {
     }
 }
 
+class AddItem extends React.Component {
+    constructor(props){
+        super(props);
+        this.handleItemAdd = this.handleItemAdd.bind(this);
+    }
+    handleItemAdd(e){
+        e.preventDefault();
+        this.props.onAddItem(this.refs.itemNameField.value);
+    }
+    render(){
+        return (
+            <form>
+                <input ref="itemNameField" type="text" placeholder="New item..."/>
+                <button onClick={this.handleItemAdd}>Add</button>
+            </form>
+        );
+    }
+}
+
 class ListItem extends React.Component {
     render(){
         var className = this.props.item.Done ? "item done" : "item not-done";
@@ -119,12 +151,34 @@ class ListDisplay extends React.Component {
         this.state = {
             list:props.list
         };
+        this.handleItemAdd = this.handleItemAdd.bind(this);
+    }
+    handleItemAdd(name){
+        var data = {
+            ListID: this.props.list.ID,
+            Name:name
+        };
+        var _this = this;
+        $.post('/api/AddItem', JSON.stringify(data), function (e) {
+            if(e.Status){
+                _this.setState({
+                    list:e.Object
+                });
+            }
+        }, 'json');
+    }
+    componentWillReceiveProps(nextProps){
+        if(nextProps !== this.state){
+            this.setState({
+                list:nextProps.list
+            });
+        }
     }
     render(){
         var rows = [];
         if(this.state.list !== null){
-            this.state.list.items.forEach(function(item){
-                rows.push(<ListItem item={item} />);
+            this.state.list.Items.forEach(function(item){
+                rows.push(<ListItem key={item.ID} item={item} />);
             });
         }
         var name = this.state.list === null ? "" : this.state.list.Name;
@@ -134,7 +188,53 @@ class ListDisplay extends React.Component {
                 <ul>
                     {rows}
                 </ul>
+                <AddItem onAddItem={this.handleItemAdd}/>
             </section>
+        );
+    }
+}
+
+class ListChoice extends React.Component{
+    constructor(props){
+        super(props);
+        this.handleClick = this.handleClick.bind(this);
+    }
+    handleClick(){
+        this.props.onChoice(this.props.list);
+    }
+    render(){
+        return (
+            <li style={{backgroundColor: this.props.isSelected ? "blue" : "white" }} onClick={this.handleClick}>{this.props.list.Name}</li>
+        );
+    }
+}
+
+class ListChoices extends React.Component {
+    constructor(props){
+        super(props);
+        this.handleListChoice = this.handleListChoice.bind(this);
+    }
+    handleListChoice(list){
+        this.props.onDisplayList(list);
+    }
+    render(){
+        var rows = [];
+        var _this = this;
+        if(this.props.lists !== null) {
+            this.props.lists.forEach(function (list) {
+                if(_this.props.currentList !== null && list.ID === _this.props.currentList.ID){
+                    rows.push(<ListChoice key={list.ID} list={list} onChoice={_this.handleListChoice} isSelected={true}/>);
+
+                }else {
+                    rows.push(<ListChoice key={list.ID} list={list} onChoice={_this.handleListChoice} isSelected={false}/>);
+                }
+            });
+        }
+        console.log("ListChoice Render");
+        return(
+            <ul>
+                {rows}
+            </ul>
         );
     }
 }
@@ -143,18 +243,43 @@ class ListApp extends React.Component {
     constructor(props){
         super(props);
         this.state = {
-            currentList: null
+            currentList: null,
+            lists:[]
         };
+        this.ignoreRefresh = false;
+        this.refreshLists = this.refreshLists.bind(this);
         this.handleAddList = this.handleAddList.bind(this);
+        this.handleDisplayList = this.handleDisplayList.bind(this);
+
+    }
+    componentWillReceiveProps(a){
+        if(!this.ignoreRefresh)
+        {
+            this.refreshLists();
+        }else{
+            this.ignoreRefresh = false;
+        }
+    }
+    refreshLists(){
+        var _this = this;
+        this.post('/api/GetLists',null, function (e) {
+            if(e.Status){
+                _this.ignoreRefresh = true;
+                _this.setState({
+                    lists:e.Object
+                });
+            }
+        });
     }
     handleAddList(name){
         var data = {
-            Key: getCookie('SessionKey'),
             Name: name
         };
         var _this = this;
-        this.post('/api/AddList', data, function (e) {
+        this.post('/api/AddList', JSON.stringify(data), function (e) {
             if(e.Status){
+                _this.ignoreRefresh = true;
+                _this.state.lists.push(e.Object);
                 _this.setState({
                     currentList:e.Object
                 });
@@ -163,12 +288,29 @@ class ListApp extends React.Component {
             }
         });
     }
+    handleDisplayList(list) {
+        var data = {
+            ID: list.ID
+        };
+        var _this = this;
+        this.post('/api/GetList', JSON.stringify(data), function (e) {
+           if(e.Status){
+               _this.ignoreRefresh = true;
+               _this.setState({
+                   currentList:e.Object
+               });
+           }
+        });
+    }
+
     post(url, data, callback){
         $.post(url, data, callback, 'json');
     }
     render(){
+        console.log("ListApp Render");
         return(
             <section>
+                <ListChoices onDisplayList={this.handleDisplayList} currentList={this.state.currentList} lists={this.state.lists}/>
                 <AddList onAddList={this.handleAddList}/>
                 <ListDisplay list={this.state.currentList}/>
             </section>
@@ -182,6 +324,31 @@ class App extends React.Component {
         super(props);
         this.handleRegisterSubmit = this.handleRegisterSubmit.bind(this);
         this.handleLoginSubmit = this.handleLoginSubmit.bind(this);
+        this.handleLogout = this.handleLogout.bind(this);
+        this.state = {
+            user:null,
+            isLogged:false
+        };
+        var _this = this;
+        this.post('/api/TryLogin',null, function (e) {
+            if(e.Status){
+                _this.setState({
+                    user:e.Object,
+                    isLogged:true
+                });
+            }
+        });
+    }
+    handleLogout(){
+        deleteCookie("SessionKey");
+        var _this = this;
+        this.post('/api/Logout', null, function (e) {
+            _this.setState({
+                user:null,
+                isLogged:false
+            });
+
+        });
     }
     handleRegisterSubmit(registerObj){
         this.post('/api/Register', JSON.stringify(registerObj), function (e) {
@@ -193,11 +360,16 @@ class App extends React.Component {
         });
     }
     handleLoginSubmit(loginObj){
+        var _this = this;
         this.post('/api/Login', JSON.stringify(loginObj), function (e) {
             if(e.Status) {
                 //TODO: Save Object as safe cookie!
                 document.getElementById('response').innerHTML = "You are logged in!";
                 createCookie("SessionKey", e.Object.SessionKey, 20);
+                _this.setState({
+                    user:e.Object,
+                    isLogged:true
+                });
             }else{
                 document.getElementById('response').innerHTML = "Error: " + e.Object;
             }
@@ -207,10 +379,12 @@ class App extends React.Component {
         $.post(url, data, callback, 'json');
     }
     render(){
+
         return (
             <section>
-                <Header onRegisterSubmit={this.handleRegisterSubmit} onLoginSubmit={this.handleLoginSubmit}/>
-                <ListApp />
+                <Header isLogged={this.state.isLogged} onRegisterSubmit={this.handleRegisterSubmit} onLoginSubmit={this.handleLoginSubmit} onLogout={this.handleLogout}/>
+                <h1>{this.state.isLogged ? "Welcome " + this.state.user.UserName : "Not logged in!"}</h1>
+                {this.state.isLogged && <ListApp />}
             </section>
         );
     }

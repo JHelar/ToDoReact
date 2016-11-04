@@ -20,17 +20,17 @@ type Item struct {
 
 //Retrieves all Items based on listID
 func GetItemsByListID(listID int, db *tododatabase.ToDoDb) []Item {
-	rows := db.Query("SELECT ID, UserID, Name, Count, Created, Done FROM Items WHERE ListID = ?", listID)
+	rows := db.Query("SELECT ID, Name, Count, Created, Done FROM Items WHERE ListID = ?", listID)
 	defer rows.Close()
 
 	var items []Item
 	for rows.Next() {
-		var id, count, userID int
+		var id, count int
 		var name string
 		var created time.Time
 		var done bool
 
-		err := rows.Scan(&id, &userID, &name, &count, &created, &done)
+		err := rows.Scan(&id, &name, &count, &created, &done)
 		switch {
 		case err == sql.ErrNoRows:
 			log.Printf("No Items found with ListID: %d", listID)
@@ -40,7 +40,7 @@ func GetItemsByListID(listID int, db *tododatabase.ToDoDb) []Item {
 			items = append(items, Item {
 				ID:id,
 				ListID:listID,
-				UserID:userID,
+				UserID:-1,
 				Name:name,
 				Count:count,
 				Created:created,
