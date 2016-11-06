@@ -13,6 +13,7 @@ import (
 	"todosecurity"
 	"tododatabase"
 	"tododatabase/todouser"
+	"tododatabase/todousersession"
 )
 
 func authenticateRequest(r *http.Request, db *tododatabase.ToDoDb) (*todouser.User, bool){
@@ -123,6 +124,29 @@ func addItem(w http.ResponseWriter, r *http.Request){
 	}
 }
 
+func updateItem(w http.ResponseWriter, r *http.Request){
+	_, ok := authenticateRequest(r, tododb)
+	if ok {
+		var item todojson.Item
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&item)
+		if err != nil {
+			log.Print(err)
+			response,_ := getJsonResponse(false, "Something went wrong try again later.")
+			fmt.Fprintf(w, string(response))
+			return
+		}
+		//UserID = ?, Name = ?, Count = ?, Done = ? WHERE ID = ?
+		ok := todoitem.UpdateItem(tododb, item.UserID, item.Name, item.Count, item.Done, item.ID)
+		response,_ := getJsonResponse(ok, "UpdateItem")
+		fmt.Fprintf(w, string(response))
+
+	}else{
+		response,_ := getJsonResponse(false, "Need to relog!")
+		fmt.Fprintf(w, string(response))
+	}
+}
+
 func register(w http.ResponseWriter, r *http.Request)  {
 	decoder := json.NewDecoder(r.Body)
 
@@ -140,7 +164,9 @@ func register(w http.ResponseWriter, r *http.Request)  {
 		return
 	}
 	if success := todouser.AddUser(user.Email, user.UserName, user.Password, tododb); success {
-		response,_ := getJsonResponse(true, "Success!")
+		user, ok := todouser.GetUserByLogin(user.Email, user.Password, tododb)
+
+		response,_ := getJsonResponse(ok, todojson.ParseToDoUser(user));
 		fmt.Fprintf(w, string(response))
 	}else {
 		response,_ := getJsonResponse(false, "Mail is allready in use.")
@@ -187,41 +213,17 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-/*
-func updateItem(w http.ResponseWriter, r *http.Request){
-	decoder := json.NewDecoder(r.Body)
-
-	var item tododatabase.Item
-	err := decoder.Decode(&item)
-	if err != nil {
-		panic(err)
+func logout(w http.ResponseWriter, r *http.Request)  {
+	user, ok := authenticateRequest(r, tododb)
+	var response []byte
+	if ok {
+		ok = todousersession.DeleteUserSessionByKey(user.SessionKey, tododb)
+		response,_ = getJsonResponse(ok, "You were logged out.")
 	}
-	if success := tododb.UpdateItem(item); success {
-		response, err := getJsonResponse()
-		if err != nil {
-			log.Printf("Error in get json for update")
-		}
-		fmt.Fprintf(w, string(response))
-	}
+	response,_ = getJsonResponse(ok, "You were logged out.")
+	fmt.Fprintf(w, string(response))
 }
 
-func addItem(w http.ResponseWriter, r *http.Request)  {
-	decoder := json.NewDecoder(r.Body)
-
-	var item tododatabase.Item
-	err := decoder.Decode(&item)
-	if err != nil {
-		panic(err)
-	}
-	if success := tododb.AddItem(item); success{
-		response, err := getJsonResponse()
-		if err != nil {
-			log.Printf("Error in get json for add")
-		}
-		fmt.Fprintf(w, string(response))
-	}
-}
-*/
 func getJsonResponse(status bool, object interface{}) ([]byte, error) {
 	type PayLoad struct {
 		Status bool
@@ -229,6 +231,7 @@ func getJsonResponse(status bool, object interface{}) ([]byte, error) {
 	}
 
 	jSon, error := json.Marshal(PayLoad{Object:object, Status:status})
+
 	//Send stream notification.
 	//stream.Notifier <- jSon
 
@@ -260,8 +263,10 @@ func main()  {
 	http.HandleFunc("/api/GetLists", getLists)
 	http.HandleFunc("/api/GetList", getList)
 	http.HandleFunc("/api/AddItem", addItem)
+	http.HandleFunc("/api/UpdateItem", updateItem)
 	http.HandleFunc("/api/Register", register)
 	http.HandleFunc("/api/Login", login)
+	http.HandleFunc("/api/Logout", logout)
 	http.HandleFunc("/api/TryLogin", tryLogin)
 
 	//Register the event stream handle

@@ -3,3 +3,13 @@ node_modules/
 
 #WebStorm files.
 .idea/
+.idea.workspace.xml
+.idea.nothingtosee/
+
+#Exclude for headace reducing!
+package.json
+.babelrc
+
+#Binaries
+pkg/windows_amd64/github.com/mattn/go-sqlite3.a
+pkg/windows_amd64/golang.org/x/net/context.a

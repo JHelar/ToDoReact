@@ -56,6 +56,7 @@ type Item struct {
 	Name string
 	Count int
 	Done bool
+	UserID int
 	Created time.Time
 }
 
@@ -65,6 +66,7 @@ func ParseToDoItem(tableItem todoitem.Item) Item {
 		Name:tableItem.Name,
 		Count:tableItem.Count,
 		Done:tableItem.Done,
+		UserID:tableItem.UserID,
 		Created:tableItem.Created,
 	}
 }

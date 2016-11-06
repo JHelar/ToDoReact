@@ -52,17 +52,19 @@ func GetItemsByListID(listID int, db *tododatabase.ToDoDb) []Item {
 	return items
 }
 
-func UpdateItem(item Item, db *tododatabase.ToDoDb) bool {
+func UpdateItem(db *tododatabase.ToDoDb, args ...interface{},) bool {
 	stmt := db.Prepare("UPDATE Items SET UserID = ?, Name = ?, Count = ?, Done = ? WHERE ID = ?")
 	defer stmt.Close()
 
-	_, err := stmt.Exec(item.UserID, item.Name, item.Count, item.Done, item.ID)
+	_, err := stmt.Exec(args...)
 	if err != nil {
 		log.Print(err)
 		return false
 	}
 	return true
 }
+
+
 
 func AddItem(listID int, name string, db *tododatabase.ToDoDb) bool {
 	stmt := db.Prepare("INSERT INTO Items(ListID, Name) VALUES (?, ?)")

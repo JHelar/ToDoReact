@@ -8,9 +8,9 @@ import (
 	"todosecurity"
 )
 type UserSession struct {
-	SesssionKey string
-	UserID int
-	LoginTime time.Time
+	SessionKey   string
+	UserID       int
+	LoginTime    time.Time
 	LastSeenTime time.Time
 }
 
@@ -22,7 +22,7 @@ func NewUserSession(userID int, db *tododatabase.ToDoDb) (string, bool){
 	err := row.Scan(&sessionKey)
 	if err != sql.ErrNoRows {
 		//We found session key. Update it and return!
-		_= UpdateUserSession(&UserSession{LastSeenTime:time.Now(), LoginTime:time.Now(), SesssionKey:sessionKey}, db)
+		_= UpdateUserSession(&UserSession{LastSeenTime:time.Now(), LoginTime:time.Now(), SessionKey:sessionKey}, db)
 		return sessionKey, true
 	}
 
@@ -60,16 +60,29 @@ func GetUserSessionByKey(sessionKey string, db *tododatabase.ToDoDb) (*UserSessi
 	default:
 		break
 	}
-	return &UserSession{SesssionKey:sessionKey, UserID:userID, LoginTime:loginTime, LastSeenTime:lastSeenTime}, true
+	return &UserSession{SessionKey:sessionKey, UserID:userID, LoginTime:loginTime, LastSeenTime:lastSeenTime}, true
 }
 
 func UpdateUserSession(userSession *UserSession, db *tododatabase.ToDoDb) bool {
 	stmt := db.Prepare("UPDATE UserSessions  SET LastSeenTime = ? WHERE SessionKey = ?")
 	defer stmt.Close()
 
-	_, err := stmt.Exec(userSession.LastSeenTime, userSession.SesssionKey)
+	_, err := stmt.Exec(userSession.LastSeenTime, userSession.SessionKey)
 	if err != nil {
 		log.Print(err)
+		return false
+	}
+	return true
+}
+
+
+func DeleteUserSessionByKey(sessionKey string, db *tododatabase.ToDoDb) bool {
+	stmt := db.Prepare("DELETE FROM UserSessions WHERE SessionKey = ?")
+	defer stmt.Close()
+
+	_, err := stmt.Exec(sessionKey)
+	if err != nil {
+		log.Print("Cant delete usersession!")
 		return false
 	}
 	return true
@@ -78,7 +91,7 @@ func UpdateUserSession(userSession *UserSession, db *tododatabase.ToDoDb) bool {
 func DeleteUserSession(userSession *UserSession, db *tododatabase.ToDoDb) bool {
 	stmt := db.Prepare("DELETE FROM UserSessions WHERE SessionKey = ?")
 	defer stmt.Close()
-	_, err := stmt.Exec(userSession.SesssionKey)
+	_, err := stmt.Exec(userSession.SessionKey)
 	if err != nil {
 		log.Print("Cant delete usersession!")
 		return false

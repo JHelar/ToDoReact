@@ -26,6 +26,7 @@ class Register extends React.Component {
         this.props.onRegister(obj);
     }
     render(){
+
         return(
             <div>
                 <button className="headerbtn" onClick={this.handleExpand}>Register</button>
@@ -64,7 +65,8 @@ class Login extends React.Component {
         this.props.onLogin(obj);
     }
     render(){
-        return(
+
+        return  (
             <div>
                 <button className="headerbtn" onClick={this.handleExpand}>Login</button>
                 {this.state.expanded && <form className="submitForm">
@@ -74,14 +76,20 @@ class Login extends React.Component {
                 </form>}
             </div>
         );
+
     }
 }
 
 class Logout extends React.Component {
+    constructor(props){
+        super(props);
+
+    }
     render(){
+
         return (
             <div>
-                <button ClassName="headerbtn" onClick={this.props.onLogout}>Logout</button>
+                <button className="headerbtn" onClick={this.props.onLogout}>Logout</button>
             </div>
         );
     }
@@ -89,6 +97,7 @@ class Logout extends React.Component {
 
 class LoginPanel extends React.Component {
     render(){
+
         return(
             <div className="loginPanel">
                 <Register onRegister={this.props.onRegister}/>
@@ -99,11 +108,16 @@ class LoginPanel extends React.Component {
 }
 
 class ToDoHeader extends React.Component {
-    render(){
+    render() {
+
         return(
-            <header>
-                <LoginPanel isLogged={this.props.isLogged} onLogin={this.props.onLogin} onLogout={this.props.onLogout} onRegister={this.props.onRegister}/>
+            <header className="mainHeader">
+                <div className="content">
+                    {this.props.isLogged ? <h1>{"ToDoReact, " + this.props.user.UserName}</h1> : <h1>ToDoReact</h1>}
+                    <LoginPanel isLogged={this.props.isLogged} onLogin={this.props.onLogin} onLogout={this.props.onLogout} onRegister={this.props.onRegister}/>
+                </div>
             </header>
         );
-    };
+    }
 }
+export default ToDoHeader;

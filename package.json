@@ -4,17 +4,31 @@
   "description": "ToDoList with ReactJS",
   "main": "ToDo.js",
   "scripts": {
-    "build": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoApp.js -o public/js/compiled/ToDoApp.js",
+    "App": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoApp/ToDoApp.js -o public/js/compiled/ToDoApp.js",
+    "Header": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoApp/ToDoHeader.js -o public/js/compiled/ToDoHeader.js",
+    "ListApp": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoApp/ToDoList.js -o public/js/compiled/ToDoList.js",
+
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oru-johlah123/ToDoReact.git"
+    "url": "git+https://github.com/JHlar/ToDoReact.git"
   },
   "author": "John Larsson",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/oru-johlah123/ToDoReact/issues"
+    "url": "https://github.com/JHlar/ToDoReact/issues"
   },
-  "homepage": "https://github.com/oru-johlah123/ToDoReact#readme"
+  "homepage": "https://github.com/JHlar/ToDoReact#readme",
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-core": "^6.18.2",
+    "babel-loader": "^6.2.7",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-react": "^6.16.0",
+    "babelify": "^7.3.0",
+    "react": "^15.3.2",
+    "react-dom": "^15.3.2",
+    "webpack": "^1.13.3"
+  }
 }

@@ -1,15 +1,210 @@
+body {
+    background-color: white;
+    margin:0;
+}
+body *{
+    box-sizing: border-box !important;
+}
+#response {
+    width: 100%;
+    border: 1px solid red;
+    background-color: lightpink;
+    padding: 2rem;
+    text-align: center;
+    font-size: 1.5rem;
+    color: red;
+    display: none;
+}
+.mainHeader {
+    background-color: lightgray;
+    padding:1rem;
+    margin-bottom: 1rem;
+}
+
+.mainHeader > .content{
+    display: flex;
+    justify-content: space-between;
+}
+
+.mainHeader > .content > h1{
+    margin: 0;
+}
+
+.loginPanel{
+    display: flex;
+    justify-content: flex-end;
+}
+.loginPanel > div {
+    position: relative;
+}
+.loginPanel > div > button {
+    border: 1px solid black;
+    padding: .5rem;
+    margin-left: .5rem;
+}
+
+.loginPanel > div > button:hover{
+    background-color: white;
+}
+
+.submitForm {
+    position: absolute;
+    display: block;
+    left:.5rem;
+    margin-top: .5rem;
+    background-color: white;
+    z-index: 999;
+}
+
+.submitForm input{
+    border: none;
+    color: black;
+    border-bottom: 1px solid black;
+    font-size: 1.2rem;
+    background-color: transparent;
+    border-radius: 2px;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+
+    padding: .5rem;
+
+    transition: all .2s ease-in-out;
+
+}
+
+.submitForm button {
+    display: none;
+}
+
+.content {
+    max-width: 967px;
+    margin: 0 auto;
+    background-color: lightgray;
+}
+.ToDoList{
+    display: flex;
+    flex-flow: row wrap;
+}
+
+.listAppForm {
+    padding: 1.5rem 1.5rem 0 0;
+    width: 100%;
+    display: block;
+}
+.listAppForm input {
+    border: none;
+    color: black;
+    border-bottom: 1px solid black;
+    font-size: 1.2rem;
+    background-color: transparent;
+    border-radius: 2px;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+
+    padding: .5rem;
+    width: 100%;
+
+    transition: all .2s ease-in-out;
+}
+.listAppForm input:hover{
+    background-color: white;
+
+}
+.listAppForm button {
+    display: none;
+}
+/*Aside listspanel*/
+.listsPanel {
+    flex: 0 30%;
+    padding: 1rem;
+
+}
+.listsPanel > section {
+    display: block;
+    border-right: 2px solid gray;
+}
+.listsPanel .listName {
+  display:block;
+  padding:0.5rem;
+  font-weight: bold;
+  font-size:1.5rem;
+    margin-bottom: .5rem;
+    margin-right: 1.5rem;
+  cursor: pointer;
+}
+
+
+.listsPanel .listName:hover,
+.listsPanel .listName.selected {
+  background-color: white;
+
+  transition: background-color,.2s ease-in-out;
+}
+
+/*List panel*/
+.listPanel {
+    flex: 1;
+    display: block;
+    padding: 1rem;
+    position: relative;
+}
+.listPanel ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.listPanel h1 {
+    margin-top:0;
+    text-align: center;
+    font-size: 3rem;
+}
+
+.listPanel .show:active,
+.listPanel .show {
+    padding: .5rem;
+    border-radius: 2px;
+    border:none;
+    display: block;
+    border:1px solid black;
+    position: absolute;
+    top:0;
+    right: 0;
+    margin-right:1rem;
+    margin-top:1rem;
+
+    transition: all .2s ease-in-out;
+}
+
+.listPanel .show:hover,
+.listPanel .show.active {
+    background-color: white;
+}
+
 .item {
-  font-size: 2rem;
-  color: black; }
-  .item .checkbox {
+    box-sizing: border-box;
+    font-size: 2rem;
+    color: black;
+    display: block;
+    width: 100%;
     cursor: pointer;
+
+    transition: all .2s ease-in-out;
+}
+.item:hover{
+    background-color: white;
+}
+.item .name{
+
+}
+.item .checkbox {
+    float:right;
+
     padding: 0;
     border: 0; }
 
 .item.not-done .checkbox {
-  color: #00ff7f; }
+    color: #00ff7f; }
 
 .item.done .checkbox {
-  color: #dc143c; }
-
+    color: #dc143c; }
 /*# sourceMappingURL=styles.css.map */

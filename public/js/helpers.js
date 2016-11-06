@@ -2,6 +2,10 @@
  * Created by johnla on 2016-11-03.
  */
 function createCookie(name,value,days) {
+    var prevCookie = getCookie(name);
+    if(prevCookie !== null){
+        deleteCookie(name);
+    }
     if (days) {
         var date = new Date();
         date.setTime(date.getTime()+(days*24*60*60*1000));
