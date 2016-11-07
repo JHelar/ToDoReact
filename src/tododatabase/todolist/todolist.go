@@ -96,3 +96,21 @@ func AddList(userID int, name string, db *tododatabase.ToDoDb) bool {
 	}
 	return true
 }
+
+func DeleteList(listID int, db *tododatabase.ToDoDb) bool {
+	stmt := db.Prepare("DELETE FROM Lists WHERE ID = ?")
+	defer stmt.Close()
+
+	_, err := stmt.Exec(listID)
+	if err != nil {
+		log.Print("Cant delete list!")
+		return false
+	}
+
+	//Delete the items!
+	items := todoitem.GetItemsByListID(listID, db)
+	for _,item := range items {
+		todoitem.DeleteItem(item.ID, db)
+	}
+	return true
+}

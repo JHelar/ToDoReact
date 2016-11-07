@@ -137,10 +137,31 @@ func updateItem(w http.ResponseWriter, r *http.Request){
 			return
 		}
 		//UserID = ?, Name = ?, Count = ?, Done = ? WHERE ID = ?
-		ok := todoitem.UpdateItem(tododb, item.UserID, item.Name, item.Count, item.Done, item.ID)
+		ok = todoitem.UpdateItem(tododb, item.UserID, item.Name, item.Count, item.Done, item.ID)
 		response,_ := getJsonResponse(ok, "UpdateItem")
 		fmt.Fprintf(w, string(response))
 
+	}else{
+		response,_ := getJsonResponse(false, "Need to relog!")
+		fmt.Fprintf(w, string(response))
+	}
+}
+
+func deleteItem(w http.ResponseWriter, r *http.Request){
+	_,ok := authenticateRequest(r, tododb)
+	if ok {
+		var item todojson.Item
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&item)
+		if err != nil {
+			log.Print(err)
+			response,_ := getJsonResponse(false, "Something went wrong try again later.")
+			fmt.Fprintf(w, string(response))
+			return
+		}
+		ok = todoitem.DeleteItem(item.ID, tododb)
+		response,_ := getJsonResponse(ok, "DeleteItem")
+		fmt.Fprintf(w, string(response))
 	}else{
 		response,_ := getJsonResponse(false, "Need to relog!")
 		fmt.Fprintf(w, string(response))
@@ -264,6 +285,7 @@ func main()  {
 	http.HandleFunc("/api/GetList", getList)
 	http.HandleFunc("/api/AddItem", addItem)
 	http.HandleFunc("/api/UpdateItem", updateItem)
+	http.HandleFunc("/api/DeleteItem", deleteItem)
 	http.HandleFunc("/api/Register", register)
 	http.HandleFunc("/api/Login", login)
 	http.HandleFunc("/api/Logout", logout)

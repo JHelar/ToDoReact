@@ -502,34 +502,75 @@ var Item = function (_React$Component4) {
         var _this5 = _possibleConstructorReturn(this, (Item.__proto__ || Object.getPrototypeOf(Item)).call(this, props));
 
         _this5.handleClick = _this5.handleClick.bind(_this5);
+        _this5.handleDelete = _this5.handleDelete.bind(_this5);
+        _this5.handleUpdate = _this5.handleUpdate.bind(_this5);
         return _this5;
     }
 
     _createClass(Item, [{
+        key: "handleUpdate",
+        value: function handleUpdate(e) {
+            e.preventDefault();
+            this.props.item.Name = this.refs.nameField.value;
+            this.props.onUpdate(this.props.item);
+        }
+    }, {
+        key: "handleDelete",
+        value: function handleDelete() {
+            this.props.onDelete(this.props.item);
+        }
+    }, {
         key: "handleClick",
         value: function handleClick() {
             this.props.item.Done = !this.props.item.Done;
-            this.props.onUpdateItem(this.props.item);
+            this.props.onUpdate(this.props.item);
         }
     }, {
         key: "render",
         value: function render() {
             var className = this.props.item.Done ? "item done" : "item not-done";
             var icon = this.props.item.Done ? "fa fa-check-square" : "fa fa-square";
-            return React.createElement(
-                "li",
-                { onClick: this.handleClick, className: className },
-                React.createElement(
-                    "span",
-                    { className: "name" },
-                    this.props.item.Name
-                ),
-                React.createElement(
-                    "span",
-                    { className: "checkbox" },
-                    React.createElement("i", { className: icon })
-                )
-            );
+            if (this.props.isEdit) {
+                return React.createElement(
+                    "li",
+                    { className: "editing " + className },
+                    React.createElement(
+                        "button",
+                        { onClick: this.handleDelete, className: "delete" },
+                        "Delete"
+                    ),
+                    React.createElement(
+                        "form",
+                        null,
+                        React.createElement("input", { type: "text", ref: "nameField", defaultValue: this.props.item.Name }),
+                        React.createElement(
+                            "button",
+                            { onClick: this.handleUpdate },
+                            "Update"
+                        )
+                    ),
+                    React.createElement(
+                        "span",
+                        { className: "checkbox" },
+                        React.createElement("i", { className: icon })
+                    )
+                );
+            } else {
+                return React.createElement(
+                    "li",
+                    { onClick: this.handleClick, className: className },
+                    React.createElement(
+                        "span",
+                        { className: "name" },
+                        this.props.item.Name
+                    ),
+                    React.createElement(
+                        "span",
+                        { className: "checkbox" },
+                        React.createElement("i", { className: icon })
+                    )
+                );
+            }
         }
     }]);
 
@@ -582,9 +623,11 @@ var ListPanel = function (_React$Component6) {
         var _this7 = _possibleConstructorReturn(this, (ListPanel.__proto__ || Object.getPrototypeOf(ListPanel)).call(this, props));
 
         _this7.state = {
-            showDone: false
+            showDone: false,
+            showEdit: false
         };
         _this7.handleToggleDone = _this7.handleToggleDone.bind(_this7);
+        _this7.handleToggleEdit = _this7.handleToggleEdit.bind(_this7);
         return _this7;
     }
 
@@ -598,16 +641,25 @@ var ListPanel = function (_React$Component6) {
             });
         }
     }, {
+        key: "handleToggleEdit",
+        value: function handleToggleEdit() {
+            this.setState(function (prevState) {
+                return {
+                    showEdit: !prevState.showEdit
+                };
+            });
+        }
+    }, {
         key: "render",
         value: function render() {
             var rows = [];
             var _this = this;
             this.props.list.Items.forEach(function (item) {
                 if (_this.state.showDone || !item.Done) {
-                    rows.push(React.createElement(Item, { key: item.ID, item: item, onUpdateItem: _this.props.onUpdateItem }));
+                    rows.push(React.createElement(Item, { key: item.ID, isEdit: _this.state.showEdit, item: item, onUpdate: _this.props.onUpdateItem, onDelete: _this.props.onDeleteItem }));
                 }
             });
-            var classname = this.state.showDone ? "show active" : "show";
+            var classname = this.state.showDone ? "active" : "";
             return React.createElement(
                 "section",
                 { className: "listPanel" },
@@ -618,7 +670,12 @@ var ListPanel = function (_React$Component6) {
                 ),
                 React.createElement(
                     "button",
-                    { onClick: this.handleToggleDone, className: classname },
+                    { onClick: this.handleToggleEdit, className: "edit " + classname },
+                    this.state.showEdit ? "Stop edit" : "Edit"
+                ),
+                React.createElement(
+                    "button",
+                    { onClick: this.handleToggleDone, className: "show " + classname },
                     this.state.showDone ? "Hide completed" : "Show completed"
                 ),
                 React.createElement(
@@ -652,8 +709,10 @@ var ToDoList = function (_React$Component7) {
 
         _this8.handleAddItem = _this8.handleAddItem.bind(_this8);
         _this8.handleUpdateItem = _this8.handleUpdateItem.bind(_this8);
+        _this8.handleDeleteItem = _this8.handleDeleteItem.bind(_this8);
 
         _this8.refreshLists = _this8.refreshLists.bind(_this8);
+        _this8.refreshList = _this8.refreshList.bind(_this8);
 
         if (props.isLogged) {
             _this8.refreshLists();
@@ -665,6 +724,8 @@ var ToDoList = function (_React$Component7) {
         key: "componentWillReceiveProps",
         value: function componentWillReceiveProps(newProps) {
             if (newProps.isLogged) {
+                console.log("New props");
+                this.state.selectedList = null;
                 this.refreshLists();
             }
         }
@@ -675,8 +736,22 @@ var ToDoList = function (_React$Component7) {
             this.post('/api/GetLists', null, function (e) {
                 if (e.Status) {
                     _this.setState({
-                        selectedList: null,
                         lists: e.Object
+                    });
+                }
+            });
+        }
+    }, {
+        key: "refreshList",
+        value: function refreshList(id) {
+            var data = {
+                ID: id
+            };
+            var _this = this;
+            this.post('/api/GetList', JSON.stringify(data), function (e) {
+                if (e.Status) {
+                    _this.setState({
+                        selectedList: e.Object
                     });
                 }
             });
@@ -703,7 +778,17 @@ var ToDoList = function (_React$Component7) {
             var _this = this;
             this.post('/api/UpdateItem', JSON.stringify(item), function (e) {
                 if (e.Status) {
-                    _this.forceUpdate();
+                    _this.refreshList(_this.state.selectedList.ID);
+                }
+            });
+        }
+    }, {
+        key: "handleDeleteItem",
+        value: function handleDeleteItem(item) {
+            var _this = this;
+            this.post('/api/DeleteItem', JSON.stringify(item), function (e) {
+                if (e.Status) {
+                    _this.refreshList(_this.state.selectedList.ID);
                 }
             });
         }
@@ -728,17 +813,7 @@ var ToDoList = function (_React$Component7) {
     }, {
         key: "handleSelectList",
         value: function handleSelectList(list) {
-            var data = {
-                ID: list.ID
-            };
-            var _this = this;
-            this.post('/api/GetList', JSON.stringify(data), function (e) {
-                if (e.Status) {
-                    _this.setState({
-                        selectedList: e.Object
-                    });
-                }
-            });
+            this.refreshList(list.ID);
         }
     }, {
         key: "post",
@@ -752,7 +827,7 @@ var ToDoList = function (_React$Component7) {
                 "main",
                 { className: "ToDoList content" },
                 this.props.isLogged && React.createElement(ListsPanel, { onSelectList: this.handleSelectList, onAddList: this.handleAddList, selectedList: this.state.selectedList, lists: this.state.lists }),
-                this.state.selectedList !== null && this.props.isLogged && React.createElement(ListPanel, { onAddItem: this.handleAddItem, onUpdateItem: this.handleUpdateItem, list: this.state.selectedList })
+                this.state.selectedList !== null && this.props.isLogged && React.createElement(ListPanel, { onAddItem: this.handleAddItem, onUpdateItem: this.handleUpdateItem, onDeleteItem: this.handleDeleteItem, list: this.state.selectedList })
             );
         }
     }]);

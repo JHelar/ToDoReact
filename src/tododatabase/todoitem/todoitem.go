@@ -78,3 +78,15 @@ func AddItem(listID int, name string, db *tododatabase.ToDoDb) bool {
 	}
 	return true
 }
+
+func DeleteItem(itemID int, db *tododatabase.ToDoDb) bool {
+	stmt := db.Prepare("DELETE FROM Items WHERE ID = ?")
+	defer stmt.Close()
+
+	_, err := stmt.Exec(itemID)
+	if err != nil {
+		log.Print("Cant delete item!")
+		return false
+	}
+	return true
+}

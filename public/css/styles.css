@@ -159,6 +159,17 @@ body *{
     font-size: 3rem;
 }
 
+.listPanel .show {
+    right: 0;
+    margin-right:1rem;
+}
+
+.listPanel .edit {
+    left: 0;
+    margin-left: 1rem;
+}
+
+.listPanel .edit,
 .listPanel .show:active,
 .listPanel .show {
     padding: .5rem;
@@ -168,13 +179,13 @@ body *{
     border:1px solid black;
     position: absolute;
     top:0;
-    right: 0;
-    margin-right:1rem;
     margin-top:1rem;
 
     transition: all .2s ease-in-out;
 }
 
+.listPanel .edit.active,
+.listPanel .edit:hover,
 .listPanel .show:hover,
 .listPanel .show.active {
     background-color: white;
@@ -196,6 +207,11 @@ body *{
 .item .name{
 
 }
+.editing.item > .delete,
+.editing.item > form{
+    display: inline-block;
+}
+
 .item .checkbox {
     float:right;
 

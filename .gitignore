@@ -13,3 +13,4 @@ package.json
 #Binaries
 pkg/windows_amd64/github.com/mattn/go-sqlite3.a
 pkg/windows_amd64/golang.org/x/net/context.a
+npm-debug.log

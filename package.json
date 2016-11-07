@@ -7,7 +7,6 @@
     "App": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoApp/ToDoApp.js -o public/js/compiled/ToDoApp.js",
     "Header": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoApp/ToDoHeader.js -o public/js/compiled/ToDoHeader.js",
     "ListApp": "browserify -t [ babelify --presets [ react ] ] public/js/ToDoApp/ToDoList.js -o public/js/compiled/ToDoList.js",
-
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -31,4 +30,5 @@
     "react-dom": "^15.3.2",
     "webpack": "^1.13.3"
   }
+
 }
